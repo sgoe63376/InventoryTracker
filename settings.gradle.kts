@@ -1,8 +1,5 @@
 pluginManagement {
     repositories {
-        gradlePluginPortal()
-        google()
-        mavenCentral()
         google {
             content {
                 includeGroupByRegex("com\\.android.*")
@@ -22,5 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DnD Inventory Tracker"
+rootProject.name = "Inventorytracker"
 include(":app")
+ 
