@@ -1,6 +1,9 @@
 package com.example.inventorytracker
 
+import android.graphics.Color
+
 data class InventoryItem(
     val name: String,
-    var color: Int = 0xFFFFFFFF.toInt() // Default: white
+    var count: Int = 0,
+    val color: Int = Color.WHITE
 )

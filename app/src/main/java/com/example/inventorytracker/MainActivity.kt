@@ -3,79 +3,107 @@ package com.example.inventorytracker
 import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.EditText
-import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import android.widget.TextView
 import android.widget.LinearLayout
 import android.widget.SeekBar
+import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
+import androidx.viewpager2.widget.ViewPager2
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var adapter: InventoryAdapter
+    private lateinit var tabLayout: TabLayout
+    private lateinit var viewPager: ViewPager2
     private lateinit var fabAddItem: FloatingActionButton
-    private lateinit var emptyStateText: TextView
-    private val inventoryItems = mutableListOf<InventoryItem>()
+    private lateinit var fabAddSheet: FloatingActionButton
+    private lateinit var pagerAdapter: SheetPagerAdapter
+
+    // Start with "Inventory" sheet
+    val sheets = mutableListOf(InventorySheet("Inventory"))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        setupViews()
-        setupRecyclerView()
-        setupFab()
-        updateEmptyState()
-    }
-
-    private fun setupViews() {
-        recyclerView = findViewById(R.id.rv_inventory)
+        tabLayout = findViewById(R.id.tab_layout)
+        viewPager = findViewById(R.id.view_pager)
         fabAddItem = findViewById(R.id.fab_add_item)
-        emptyStateText = findViewById(R.id.tv_empty_state)
-    }
+        fabAddSheet = findViewById(R.id.fab_add_sheet)
 
-    private fun setupRecyclerView() {
-        adapter = InventoryAdapter(
-            inventoryItems,
-            onInventoryChanged = { updateEmptyState() },
-            onDelete = { item ->
-                adapter.removeItem(item)
-                updateEmptyState()
-            }
-        )
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = adapter
-    }
+        pagerAdapter = SheetPagerAdapter(this, sheets)
+        viewPager.adapter = pagerAdapter
 
-    private fun setupFab() {
+        // Automatically link tab text to sheet name
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            tab.text = sheets[position].name
+        }.attach()
+
+        // FAB: Add new item to selected sheet
         fabAddItem.setOnClickListener {
-            showAddItemDialog()
+            val currentSheetIndex = viewPager.currentItem
+            showAddItemDialog(currentSheetIndex)
+        }
+
+        // FAB: Add new sheet
+        fabAddSheet.setOnClickListener {
+            showAddSheetDialog()
         }
     }
 
-    private fun showAddItemDialog() {
+    private fun showAddSheetDialog() {
+        val editText = EditText(this).apply {
+            hint = "Enter sheet name"
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Add New Sheet")
+            .setView(editText)
+            .setPositiveButton("Add") { _, _ ->
+                val name = editText.text.toString().trim()
+                if (name.isNotEmpty()) {
+                    sheets.add(InventorySheet(name))
+                    pagerAdapter.notifyItemInserted(sheets.lastIndex)
+                    viewPager.setCurrentItem(sheets.lastIndex, true)
+                    Log.d("MainActivity", "Added sheet: $name")
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showAddItemDialog(sheetIndex: Int) {
         val context = this
         val layout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(48, 24, 48, 10)
         }
+
         val editText = EditText(context).apply {
             hint = "Enter item name"
         }
+
         val colorSeekBar = SeekBar(context).apply {
             max = 0xFFFFFF
         }
+
         val colorPreview = View(context).apply {
             layoutParams = LinearLayout.LayoutParams(100, 50)
             setBackgroundColor(Color.WHITE)
         }
-        colorSeekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+
+        colorSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                colorPreview.setBackgroundColor(Color.rgb(progress shr 16, (progress shr 8) and 0xFF, progress and 0xFF))
+                val red = (progress shr 16) and 0xFF
+                val green = (progress shr 8) and 0xFF
+                val blue = progress and 0xFF
+                val color = Color.rgb(red, green, blue)
+                colorPreview.setBackgroundColor(color)
             }
+
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
@@ -84,39 +112,24 @@ class MainActivity : AppCompatActivity() {
         layout.addView(colorSeekBar)
         layout.addView(colorPreview)
 
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(context)
             .setTitle("Add New Item")
             .setView(layout)
             .setPositiveButton("Add") { _, _ ->
                 val itemName = editText.text.toString().trim()
-                val color = Color.rgb(
-                    colorSeekBar.progress shr 16,
-                    (colorSeekBar.progress shr 8) and 0xFF,
-                    colorSeekBar.progress and 0xFF
-                )
                 if (itemName.isNotEmpty()) {
-                    val newItem = InventoryItem(name = itemName, color = color)
-                    val added = adapter.addItem(newItem)
-                    if (!added) {
-                        AlertDialog.Builder(this)
-                            .setMessage("Duplicate item: \"$itemName\" already exists.")
-                            .setPositiveButton("OK", null)
-                            .show()
-                    }
-                    updateEmptyState()
+                    val color = (colorPreview.background as? android.graphics.drawable.ColorDrawable)?.color
+                        ?: Color.WHITE
+                    val newItem = InventoryItem(name = itemName, count = 0, color = color)
+
+                    // Add to correct sheet
+                    sheets[sheetIndex].items.add(newItem)
+                    val currentFragment = supportFragmentManager.findFragmentByTag("f${sheetIndex}") as? InventoryFragment
+                    currentFragment?.refreshItems()
+                    Log.d("MainActivity", "Added item '$itemName' to sheet index $sheetIndex")
                 }
             }
             .setNegativeButton("Cancel", null)
             .show()
-    }
-
-    private fun updateEmptyState() {
-        if (inventoryItems.isEmpty()) {
-            emptyStateText.visibility = View.VISIBLE
-            recyclerView.visibility = View.GONE
-        } else {
-            emptyStateText.visibility = View.GONE
-            recyclerView.visibility = View.VISIBLE
-        }
     }
 }

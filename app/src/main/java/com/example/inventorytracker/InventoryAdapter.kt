@@ -4,55 +4,49 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
+import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class InventoryAdapter(
     private val items: MutableList<InventoryItem>,
-    private val onInventoryChanged: (InventoryItem) -> Unit,
-    private val onDelete: (InventoryItem) -> Unit
-) : RecyclerView.Adapter<InventoryAdapter.ViewHolder>() {
+    private val onInventoryChanged: () -> Unit = {}
+) : RecyclerView.Adapter<InventoryAdapter.InventoryViewHolder>() {
 
-    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    inner class InventoryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val colorIndicator: View = itemView.findViewById(R.id.view_color_indicator)
         val itemName: TextView = itemView.findViewById(R.id.tv_item_name)
-        val deleteBtn: ImageButton = itemView.findViewById(R.id.btn_delete)
-        val colorBar: View = itemView.findViewById(R.id.color_bar)
+        val itemCount: TextView = itemView.findViewById(R.id.tv_item_count)
+        val btnAdd: Button = itemView.findViewById(R.id.btn_add)
+        val btnSubtract: Button = itemView.findViewById(R.id.btn_subtract)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): InventoryViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_inventory, parent, false)
-        return ViewHolder(view)
+        return InventoryViewHolder(view)
     }
 
-    override fun getItemCount() = items.size
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: InventoryViewHolder, position: Int) {
         val item = items[position]
+
+        holder.colorIndicator.setBackgroundColor(item.color)
         holder.itemName.text = item.name
-        holder.colorBar.setBackgroundColor(item.color)
-        holder.deleteBtn.setOnClickListener {
-            onDelete(item)
+        holder.itemCount.text = item.count.toString()
+
+        holder.btnAdd.setOnClickListener {
+            item.count++
+            notifyItemChanged(position)
+            onInventoryChanged()
+        }
+        holder.btnSubtract.setOnClickListener {
+            if (item.count > 0) {
+                item.count--
+                notifyItemChanged(position)
+                onInventoryChanged()
+            }
         }
     }
 
-    fun addItem(item: InventoryItem): Boolean {
-        if (items.any { it.name.equals(item.name, ignoreCase = true) }) {
-            return false // Duplicate
-        }
-        items.add(item)
-        notifyItemInserted(items.size - 1)
-        onInventoryChanged(item)
-        return true
-    }
-
-    fun removeItem(item: InventoryItem) {
-        val idx = items.indexOf(item)
-        if (idx != -1) {
-            items.removeAt(idx)
-            notifyItemRemoved(idx)
-            onInventoryChanged(item)
-        }
-    }
+    override fun getItemCount(): Int = items.size
 }

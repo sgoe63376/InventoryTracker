@@ -7,33 +7,48 @@
     app:cardCornerRadius="8dp"
     app:cardElevation="4dp">
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:gravity="center_vertical">
 
-
-
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:padding="8dp">
         <View
-            android:id="@+id/color_bar"
-            android:layout_width="8dp"
-            android:layout_height="match_parent"
+            android:id="@+id/view_color_indicator"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="12dp"
             android:background="#FFFFFF" />
+
         <TextView
             android:id="@+id/tv_item_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Item Name"
-            android:textSize="18sp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"/>
-        <ImageButton
-            android:id="@+id/btn_delete"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tv_item_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_menu_delete"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Delete" />
+            android:text="0"
+            android:textSize="16sp"
+            android:layout_marginEnd="12dp" />
+
+        <Button
+            android:id="@+id/btn_subtract"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:text="-" />
+
+        <Button
+            android:id="@+id/btn_add"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:text="+" />
+
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>
