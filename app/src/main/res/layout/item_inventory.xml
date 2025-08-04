@@ -7,54 +7,33 @@
     app:cardCornerRadius="8dp"
     app:cardElevation="4dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="16dp">
 
+
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:padding="8dp">
+        <View
+            android:id="@+id/color_bar"
+            android:layout_width="8dp"
+            android:layout_height="match_parent"
+            android:background="#FFFFFF" />
         <TextView
             android:id="@+id/tv_item_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="Item Name"
             android:textSize="18sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@+id/btn_decrease"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <Button
-            android:id="@+id/btn_decrease"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="-"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@+id/tv_item_quantity"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/tv_item_quantity"
-            android:layout_width="48dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"/>
+        <ImageButton
+            android:id="@+id/btn_delete"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="0"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@+id/btn_increase"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="@+id/btn_decrease" />
-
-        <Button
-            android:id="@+id/btn_increase"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="+"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            android:src="@android:drawable/ic_menu_delete"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Delete" />
+    </LinearLayout>
 
 </androidx.cardview.widget.CardView>
