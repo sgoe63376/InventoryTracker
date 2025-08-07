@@ -48,7 +48,12 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:text="+" />
-
+        <Button
+            android:id="@+id/btn_delete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:text="X"
+            android:layout_marginStart="8dp"/>
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>

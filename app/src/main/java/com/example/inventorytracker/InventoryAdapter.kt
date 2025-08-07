@@ -10,35 +10,40 @@ import androidx.recyclerview.widget.RecyclerView
 
 class InventoryAdapter(
     private val items: MutableList<InventoryItem>,
-    private val onInventoryChanged: () -> Unit = {}
-) : RecyclerView.Adapter<InventoryAdapter.InventoryViewHolder>() {
+    private val onInventoryChanged: () -> Unit,
+    private val onDelete: ((InventoryItem) -> Unit)? = null
+) : RecyclerView.Adapter<InventoryAdapter.ViewHolder>() {
 
-    inner class InventoryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val colorIndicator: View = itemView.findViewById(R.id.view_color_indicator)
-        val itemName: TextView = itemView.findViewById(R.id.tv_item_name)
-        val itemCount: TextView = itemView.findViewById(R.id.tv_item_count)
-        val btnAdd: Button = itemView.findViewById(R.id.btn_add)
-        val btnSubtract: Button = itemView.findViewById(R.id.btn_subtract)
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val colorIndicator: View = view.findViewById(R.id.view_color_indicator)
+        val nameText: TextView = view.findViewById(R.id.tv_item_name)
+        val countText: TextView = view.findViewById(R.id.tv_item_count)
+        val btnAdd: Button = view.findViewById(R.id.btn_add)
+        val btnSubtract: Button = view.findViewById(R.id.btn_subtract)
+        val btnDelete: Button = view.findViewById(R.id.btn_delete)  // New delete button
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): InventoryViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_inventory, parent, false)
-        return InventoryViewHolder(view)
+        return ViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: InventoryViewHolder, position: Int) {
+    override fun getItemCount(): Int = items.size
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
 
         holder.colorIndicator.setBackgroundColor(item.color)
-        holder.itemName.text = item.name
-        holder.itemCount.text = item.count.toString()
+        holder.nameText.text = item.name
+        holder.countText.text = item.count.toString()
 
         holder.btnAdd.setOnClickListener {
             item.count++
             notifyItemChanged(position)
             onInventoryChanged()
         }
+
         holder.btnSubtract.setOnClickListener {
             if (item.count > 0) {
                 item.count--
@@ -46,7 +51,35 @@ class InventoryAdapter(
                 onInventoryChanged()
             }
         }
+
+        holder.btnDelete.setOnClickListener {
+            onDelete?.invoke(item)
+        }
     }
 
-    override fun getItemCount(): Int = items.size
+    fun addItem(newItem: InventoryItem): Boolean {
+        // Check for duplicates by name (case insensitive)
+        if (items.any { it.name.equals(newItem.name, ignoreCase = true) }) {
+            return false
+        }
+        items.add(newItem)
+        sortItems()
+        notifyDataSetChanged()
+        onInventoryChanged()
+        return true
+    }
+
+    fun removeItem(item: InventoryItem) {
+        val removed = items.remove(item)
+        if (removed) {
+            notifyDataSetChanged()
+            onInventoryChanged()
+        }
+    }
+
+    private fun sortItems() {
+        items.sortWith(compareBy({ it.color }, { it.name.toLowerCase() }))
+    }
 }
+
+

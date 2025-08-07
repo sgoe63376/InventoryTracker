@@ -1,4 +1,5 @@
 package com.example.inventorytracker
+
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -34,7 +35,6 @@ class InventoryFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_inventory, container, false)
         recyclerView = view.findViewById(R.id.rv_inventory)
 
-        // Direct reference to the same MutableList in MainActivity:
         val mainActivity = activity as? MainActivity
         val items = mainActivity?.sheets?.get(sheetIndex)?.items
             ?: mutableListOf()
@@ -42,7 +42,10 @@ class InventoryFragment : Fragment() {
         adapter = InventoryAdapter(
             items,
             onInventoryChanged = {
-                // Optional: you can save state or update UI if needed
+                // Could update UI or save state here if needed
+            },
+            onDelete = { item ->
+                mainActivity?.deleteItemFromSheet(sheetIndex, item)
             }
         )
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -50,6 +53,7 @@ class InventoryFragment : Fragment() {
 
         return view
     }
+
     fun refreshItems() {
         adapter.notifyDataSetChanged()
     }

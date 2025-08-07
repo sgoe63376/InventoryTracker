@@ -13,6 +13,9 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import androidx.viewpager2.widget.ViewPager2
+import android.content.Context
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 class MainActivity : AppCompatActivity() {
 
@@ -22,8 +25,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fabAddSheet: FloatingActionButton
     private lateinit var pagerAdapter: SheetPagerAdapter
 
-    // Start with "Inventory" sheet
-    val sheets = mutableListOf(InventorySheet("Inventory"))
+    val sheets = mutableListOf<InventorySheet>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,21 +36,23 @@ class MainActivity : AppCompatActivity() {
         fabAddItem = findViewById(R.id.fab_add_item)
         fabAddSheet = findViewById(R.id.fab_add_sheet)
 
+        loadSheets()
+        if (sheets.isEmpty()) {
+            sheets.add(InventorySheet("Inventory")) // Default sheet if none saved
+        }
+
         pagerAdapter = SheetPagerAdapter(this, sheets)
         viewPager.adapter = pagerAdapter
 
-        // Automatically link tab text to sheet name
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
             tab.text = sheets[position].name
         }.attach()
 
-        // FAB: Add new item to selected sheet
         fabAddItem.setOnClickListener {
             val currentSheetIndex = viewPager.currentItem
             showAddItemDialog(currentSheetIndex)
         }
 
-        // FAB: Add new sheet
         fabAddSheet.setOnClickListener {
             showAddSheetDialog()
         }
@@ -68,6 +72,7 @@ class MainActivity : AppCompatActivity() {
                     sheets.add(InventorySheet(name))
                     pagerAdapter.notifyItemInserted(sheets.lastIndex)
                     viewPager.setCurrentItem(sheets.lastIndex, true)
+                    saveSheets()
                     Log.d("MainActivity", "Added sheet: $name")
                 }
             }
@@ -122,14 +127,74 @@ class MainActivity : AppCompatActivity() {
                         ?: Color.WHITE
                     val newItem = InventoryItem(name = itemName, count = 0, color = color)
 
-                    // Add to correct sheet
-                    sheets[sheetIndex].items.add(newItem)
-                    val currentFragment = supportFragmentManager.findFragmentByTag("f${sheetIndex}") as? InventoryFragment
-                    currentFragment?.refreshItems()
+                    // Prevent duplicates on this sheet
+                    val sheet = sheets[sheetIndex]
+                    if (sheet.items.any { it.name.equals(itemName, ignoreCase = true) }) {
+                        AlertDialog.Builder(this)
+                            .setMessage("Duplicate item name on this sheet.")
+                            .setPositiveButton("OK", null)
+                            .show()
+                        return@setPositiveButton
+                    }
+
+                    sheet.items.add(newItem)
+                    sortSheetItems(sheet)
+                    pagerAdapter.notifyItemChanged(sheetIndex)
+
+                    saveSheets()
                     Log.d("MainActivity", "Added item '$itemName' to sheet index $sheetIndex")
                 }
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun sortSheetItems(sheet: InventorySheet) {
+        sheet.items.sortWith(compareBy({ it.color }, { it.name.lowercase() }))
+    }
+
+    fun deleteItemFromSheet(sheetIndex: Int, item: InventoryItem) {
+        val sheet = sheets.getOrNull(sheetIndex) ?: return
+        val removed = sheet.items.remove(item)
+        if (removed) {
+            saveSheets()
+            pagerAdapter.notifyItemChanged(sheetIndex)
+            Log.d("MainActivity", "Deleted item '${item.name}' from sheet $sheetIndex")
+        }
+    }
+
+    fun deleteSheet(index: Int) {
+        if (index >= 0 && index < sheets.size) {
+            sheets.removeAt(index)
+            pagerAdapter.notifyItemRemoved(index)
+            val newIndex = if (index == sheets.size) index - 1 else index
+            if (newIndex >= 0) viewPager.setCurrentItem(newIndex, true)
+            saveSheets()
+        }
+    }
+
+    // --- Persistence with SharedPreferences + Gson ---
+
+    private fun saveSheets() {
+        val prefs = getSharedPreferences("inventory_prefs", Context.MODE_PRIVATE)
+        val editor = prefs.edit()
+        val gson = Gson()
+        val json = gson.toJson(sheets)
+        editor.putString("sheets_data", json)
+        editor.apply()
+        Log.d("MainActivity", "Saved sheets to SharedPreferences")
+    }
+
+    private fun loadSheets() {
+        val prefs = getSharedPreferences("inventory_prefs", Context.MODE_PRIVATE)
+        val json = prefs.getString("sheets_data", null)
+        if (json != null) {
+            val gson = Gson()
+            val type = object : TypeToken<MutableList<InventorySheet>>() {}.type
+            val loadedSheets: MutableList<InventorySheet> = gson.fromJson(json, type)
+            sheets.clear()
+            sheets.addAll(loadedSheets)
+            Log.d("MainActivity", "Loaded sheets from SharedPreferences")
+        }
     }
 }
